@@ -1,216 +1,285 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Conversation Viewer</title>
     <style>
-       * {
-	     max-width: 100%;
-	}
-        body {
-            margin: 20px;
-            display: flex;
-            gap: 20px;
-        }
-        #sidebar {
-            width: 15%;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        #sidebar h4 {
-            margin: 0;
-            font-family: sans-serif;
-        }
-        #root {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-		
-        }
-        .conversation {
-            border: 1px solid black;
-            padding: 20px;
-            background-color: #f3f3f3;
-            overflow: scroll;
-        }
-        .message {
-            white-space: pre-wrap;
-            margin: 20px 0;
-        }
-        .author {
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
-        .author::first-letter {
-            text-transform: uppercase;
-        }
-        .sidebar-item {
-            cursor: pointer;
-            padding: 5px;
-            background-color: #ddd;
-            border: 1px solid #bbb;
-        }
-        .sidebar-item:hover {
-            background-color: #ccc;
-        }
-        .timestamp {
-            font-size: 0.9em;
-            color: #888;
-            margin-top: 4px;
-        }
-        input[type="file"] {
-            margin-bottom: 20px;
-        }
+      * {
+        max-width: 100%;
+      }
+      body {
+        margin: 20px;
+        display: flex;
+        gap: 20px;
+        font-family: Arial, sans-serif;
+        background-color: #f9f9f9;
+        transition: background-color 0.3s, color 0.3s;
+      }
+      body.dark-mode {
+        background-color: #121212;
+        color: #e0e0e0;
+      }
+      #sidebar {
+        width: 15%;
+        padding: 10px;
+        background-color: #ffffff;
+        border: 1px solid #ccc;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transition: background-color 0.3s, color 0.3s;
+      }
+      #sidebar-item {
+        cursor: pointer;
+        padding: 10px;
+        border-radius: 5px;
+        transition: background-color 0.3s, color 0.3s;
+      }
+      body.dark-mode #sidebar {
+        background-color: #1e1e1e;
+        border-color: #333;
+      }
+      #sidebar h4 {
+        margin: 0;
+        font-family: sans-serif;
+        color: #333;
+      }
+      body.dark-mode #sidebar h4 {
+        color: #e0e0e0;
+      }
+      #root {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .conversation {
+        border: 1px solid #ddd;
+        padding: 20px;
+        background-color: #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: auto;
+        border-radius: 5px;
+        transition: background-color 0.3s, color 0.3s;
+      }
+      body.dark-mode .conversation {
+        background-color: #1e1e1e;
+        border-color: #333;
+      }
+      .message {
+        white-space: pre-wrap;
+        margin: 20px 0;
+        padding: 10px;
+        background-color: #f7f7f7;
+        border-radius: 5px;
+        transition: background-color 0.3s, color 0.3s;
+      }
+      body.dark-mode .message {
+        background-color: #2e2e2e;
+      }
+      .author {
+        font-weight: bold;
+        margin-bottom: 4px;
+        color: #555;
+      }
+      body.dark-mode .author {
+        color: #bbb;
+      }
+      .timestamp {
+        font-size: 0.9em;
+        color: #888;
+      }
+      body.dark-mode .timestamp {
+        color: #aaa;
+      }
+      .dark-mode-toggle {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 10px;
+        background-color: #ffffff;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s, color 0.3s;
+      }
+      body.dark-mode .dark-mode-toggle {
+        background-color: #333;
+        color: #e0e0e0;
+      }
+
+      hr {
+        width: 100%;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <!-- Dark mode toggle button -->
+    <div class="dark-mode-toggle" onclick="toggleDarkMode()">
+      Toggle Dark Mode
+    </div>
 
     <!-- File input for loading JSON data -->
-    <input type="file" id="fileInput" accept=".json">
-    
+    <input type="file" id="fileInput" accept=".json" />
+
     <div id="sidebar">
-        <h4>Conversations</h4>
-        <!-- List of conversation titles will go here -->
+      <h4>Conversations</h4>
+      <!-- List of conversation titles will go here -->
     </div>
 
     <div id="root">
-        <!-- The selected conversation messages will be shown here -->
+      <!-- The selected conversation messages will be shown here -->
     </div>
 
     <script>
-        let jsonData = []; // Will hold the loaded conversation data
+      let jsonData = []; // Will hold the loaded conversation data
 
-        // Function to convert epoch timestamp to a human-readable date
-        function convertEpochToReadable(epochTime) {
-            const date = new Date(epochTime * 1000); // Convert to milliseconds
-            return date.toLocaleString(); // Converts to a human-readable format
+      // Function to convert epoch timestamp to a human-readable date
+      function convertEpochToReadable(epochTime) {
+        const date = new Date(epochTime * 1000); // Convert to milliseconds
+        return date.toLocaleString(); // Converts to a human-readable format
+      }
+
+      // Function to parse and display the conversation messages
+      function getConversationMessages(conversation) {
+        var messages = [];
+        var currentNode = conversation.current_node;
+        while (currentNode != null) {
+          var node = conversation.mapping[currentNode];
+          if (
+            node.message &&
+            node.message.content &&
+            node.message.content.content_type == "text" &&
+            node.message.content.parts.length > 0 &&
+            node.message.content.parts[0].length > 0 &&
+            (node.message.author.role !== "system" ||
+              node.message.metadata.is_user_system_message)
+          ) {
+            let author = node.message.author.role;
+            if (author === "assistant") {
+              author = "ChatGPT";
+            } else if (
+              author === "system" &&
+              node.message.metadata.is_user_system_message
+            ) {
+              author = "Custom user info";
+            }
+            let messageTime = convertEpochToReadable(node.message.create_time);
+            let lastEdited = node.message.update_time
+              ? convertEpochToReadable(node.message.update_time)
+              : null;
+            messages.push({
+              author,
+              text: node.message.content.parts[0],
+              time: messageTime,
+              lastEdited,
+            });
+          }
+          currentNode = node.parent;
+        }
+        return messages.reverse();
+      }
+
+      // Function to load the JSON file input
+      function loadFile(event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            try {
+              jsonData = JSON.parse(e.target.result);
+
+              document.getElementById("fileInput").style.display = "none";
+              displayConversations();
+            } catch (err) {
+              alert("Failed to parse the JSON file. Please check the format.");
+            }
+          };
+          reader.readAsText(file);
+        }
+      }
+
+      // Function to display the conversations and messages
+      function displayConversations() {
+        var root = document.getElementById("root");
+        var sidebar = document.getElementById("sidebar");
+
+        sidebar.innerHTML = "<h4>Conversations</h4>"; // Clear sidebar before reloading
+
+        // Create the sidebar items for each conversation
+        for (var i = 0; i < jsonData.length; i++) {
+          var conversation = jsonData[i];
+          var sidebarItem = document.createElement("div");
+          sidebarItem.className = "sidebar-item";
+          sidebarItem.innerHTML = conversation.title;
+
+          // Add event listener to load conversation when clicked
+          sidebarItem.onclick = (function (conversation) {
+            return function () {
+              displayConversationMessages(conversation);
+            };
+          })(conversation);
+
+          sidebar.appendChild(sidebarItem);
+          sidebar.appendChild(document.createElement("hr"));
         }
 
-        // Function to parse and display the conversation messages
-        function getConversationMessages(conversation) {
-            var messages = [];
-            var currentNode = conversation.current_node;
-            while (currentNode != null) {
-                var node = conversation.mapping[currentNode];
-                if (
-                    node.message &&
-                    node.message.content &&
-                    node.message.content.content_type == "text" &&
-                    node.message.content.parts.length > 0 &&
-                    node.message.content.parts[0].length > 0 &&
-                    (node.message.author.role !== "system" || node.message.metadata.is_user_system_message)
-                ) {
-                    let author = node.message.author.role;
-                    if (author === "assistant") {
-                        author = "ChatGPT";
-                    } else if (author === "system" && node.message.metadata.is_user_system_message) {
-                        author = "Custom user info";
-                    }
-                    let messageTime = convertEpochToReadable(node.message.create_time);
-                    let lastEdited = node.message.update_time ? convertEpochToReadable(node.message.update_time) : null;
-                    messages.push({ author, text: node.message.content.parts[0], time: messageTime, lastEdited });
-                }
-                currentNode = node.parent;
-            }
-            return messages.reverse();
+        // Display the first conversation by default
+        if (jsonData.length > 0) {
+          displayConversationMessages(jsonData[0]);
         }
+      }
 
-        // Function to load the JSON file input
-        function loadFile(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        jsonData = JSON.parse(e.target.result);
-						
-						document.getElementById("fileInput").style.display = "none"
-                        displayConversations();
-                    } catch (err) {
-                        alert("Failed to parse the JSON file. Please check the format.");
-                    }
-                };
-                reader.readAsText(file);
-            }
+      // Function to display messages of a selected conversation
+      function displayConversationMessages(conversation) {
+        var messages = getConversationMessages(conversation);
+        var root = document.getElementById("root");
+        root.innerHTML = ""; // Clear the current messages
+        var div = document.createElement("div");
+        div.className = "conversation";
+        div.innerHTML = "<h4>" + conversation.title + "</h4>";
+
+        // Display conversation creation and last edited time
+        var conversationTime = convertEpochToReadable(conversation.create_time);
+        var conversationLastEdited = conversation.update_time
+          ? convertEpochToReadable(conversation.update_time)
+          : null;
+        var timestampDiv = document.createElement("div");
+        timestampDiv.className = "timestamp";
+        timestampDiv.innerHTML = `Created on: ${conversationTime}`;
+        if (conversationLastEdited) {
+          timestampDiv.innerHTML += `<br>Last edited on: ${conversationLastEdited}`;
         }
+        div.appendChild(timestampDiv);
 
-        // Function to display the conversations and messages
-        function displayConversations() {
-            var root = document.getElementById("root");
-            var sidebar = document.getElementById("sidebar");
+        // Display all messages
+        for (var j = 0; j < messages.length; j++) {
+          var message = document.createElement("pre");
+          message.className = "message";
+          message.innerHTML = `<div class="author">${messages[j].author}</div><p>${messages[j].text}</p>`;
 
-            sidebar.innerHTML = "<h4>Conversations</h4>"; // Clear sidebar before reloading
-
-            // Create the sidebar items for each conversation
-            for (var i = 0; i < jsonData.length; i++) {
-                var conversation = jsonData[i];
-                var sidebarItem = document.createElement("div");
-                sidebarItem.className = "sidebar-item";
-                sidebarItem.innerHTML = conversation.title;
-
-                // Add event listener to load conversation when clicked
-                sidebarItem.onclick = (function(conversation) {
-                    return function() {
-                        displayConversationMessages(conversation);
-                    };
-                })(conversation);
-
-                sidebar.appendChild(sidebarItem);
-            }
-
-            // Display the first conversation by default
-            if (jsonData.length > 0) {
-                displayConversationMessages(jsonData[0]);
-            }
+          // Display message creation time and last edited time
+          var messageTimeDiv = document.createElement("div");
+          messageTimeDiv.className = "timestamp";
+          messageTimeDiv.innerHTML = `Sent on: ${messages[j].time}`;
+          if (messages[j].lastEdited) {
+            messageTimeDiv.innerHTML += `<br>Last edited on: ${messages[j].lastEdited}`;
+          }
+          message.appendChild(messageTimeDiv);
+          div.appendChild(message);
         }
+        root.appendChild(div);
+      }
 
-        // Function to display messages of a selected conversation
-        function displayConversationMessages(conversation) {
-            var messages = getConversationMessages(conversation);
-            var root = document.getElementById("root");
-            root.innerHTML = "";  // Clear the current messages
-            var div = document.createElement("div");
-            div.className = "conversation";
-            div.innerHTML = "<h4>" + conversation.title + "</h4>";
-            
-            // Display conversation creation and last edited time
-            var conversationTime = convertEpochToReadable(conversation.create_time);
-            var conversationLastEdited = conversation.update_time ? convertEpochToReadable(conversation.update_time) : null;
-            var timestampDiv = document.createElement("div");
-            timestampDiv.className = "timestamp";
-            timestampDiv.innerHTML = `Created on: ${conversationTime}`;
-            if (conversationLastEdited) {
-                timestampDiv.innerHTML += `<br>Last edited on: ${conversationLastEdited}`;
-            }
-            div.appendChild(timestampDiv);
-            
-            // Display all messages
-            for (var j = 0; j < messages.length; j++) {
-                var message = document.createElement("pre");
-                message.className = "message";
-                message.innerHTML = `<div class="author">${messages[j].author}</div><p>${messages[j].text}</p>`;
-                
-                // Display message creation time and last edited time
-                var messageTimeDiv = document.createElement("div");
-                messageTimeDiv.className = "timestamp";
-                messageTimeDiv.innerHTML = `Sent on: ${messages[j].time}`;
-                if (messages[j].lastEdited) {
-                    messageTimeDiv.innerHTML += `<br>Last edited on: ${messages[j].lastEdited}`;
-                }
-                message.appendChild(messageTimeDiv);
-                div.appendChild(message);
-            }
-            root.appendChild(div);
-        }
+      // Function to toggle dark mode
+      function toggleDarkMode() {
+        document.body.classList.toggle("dark-mode");
+      }
 
-        // Attach event listener to the file input element
-        document.getElementById("fileInput").addEventListener("change", loadFile);
+      // Attach event listener to the file input element
+      document.getElementById("fileInput").addEventListener("change", loadFile);
     </script>
-</body>
+  </body>
 </html>
